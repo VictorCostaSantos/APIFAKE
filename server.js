@@ -1,12 +1,13 @@
 const jsonServer = require('json-server');
 const low = require('lowdb');
-const Memory = require('lowdb/adapters/Memory');
+const FileSync = require('lowdb/adapters/FileSync'); // Importe o FileSync adapter
 
-const adapter = new Memory();
+// Use o adapter FileSync para ler e gravar dados em um arquivo
+const adapter = new FileSync('db.json');
 const db = low(adapter);
 
-// Adicione seus dados ao banco de dados em memória, se necessário
-db.defaults({ posts: [], videos: [] }).write();
+// Adicione seus dados iniciais ao banco de dados se necessário
+db.defaults({ videos: [] }).write();
 
 const server = jsonServer.create();
 const middlewares = jsonServer.defaults();
@@ -18,19 +19,11 @@ server.use((req, res, next) => {
   next();
 });
 
-// Defina o roteador corretamente
 const router = jsonServer.router(db);
-
-// Adicione uma rota personalizada para /videos
-router.db._.mixin({
-  videos: function () {
-    return db.get('videos').value()
-  }
-});
 
 server.use(jsonServer.bodyParser);
 server.use((req, res, next) => {
-  req.db = db; // Adicione o objeto de banco de dados ao objeto de solicitação
+  req.db = db;
   next();
 });
 server.use(router);
