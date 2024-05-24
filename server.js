@@ -1,13 +1,28 @@
 const jsonServer = require('json-server');
 const low = require('lowdb');
-const FileSync = require('lowdb/adapters/FileSync'); // Importe o FileSync adapter
+const Memory = require('lowdb/adapters/Memory');
 
-// Use o adapter FileSync para ler e gravar dados em um arquivo
-const adapter = new FileSync('db.json');
+const adapter = new Memory();
 const db = low(adapter);
 
-// Adicione seus dados iniciais ao banco de dados se necessário
-db.defaults({ videos: [] }).write();
+// Adicione seus dados ao banco de dados em memória, incluindo vídeos
+db.defaults({ posts: [], videos: [
+    {
+        "id": 1,
+        "titulo": "Conhecendo a linguagem Go | Hipsters.Talks",
+        "descricao": "3 mil visualizações",
+        "url": "https://www.youtube.com/embed/y8FeZMv37WU",
+        "imagem": "https://github.com/MonicaHillman/aluraplay-requisicoes/blob/main/img/logo.png?raw=true"
+      },
+      {
+        "id": 2,
+        "titulo": "Desmistificando mobile - Linguagens e Frameworks",
+        "descricao": "1,5 mil visualizações",
+        "url": "https://www.youtube.com/embed/fmu1LQvZhms",
+        "imagem": "https://github.com/MonicaHillman/aluraplay-requisicoes/blob/main/img/logo.png?raw=true"
+      }
+  // Adicione mais vídeos conforme necessário
+]}).write();
 
 const server = jsonServer.create();
 const middlewares = jsonServer.defaults();
@@ -19,11 +34,19 @@ server.use((req, res, next) => {
   next();
 });
 
+// Defina o roteador corretamente
 const router = jsonServer.router(db);
+
+// Adicione uma rota personalizada para /videos
+router.db._.mixin({
+  videos: function () {
+    return db.get('videos').value()
+  }
+});
 
 server.use(jsonServer.bodyParser);
 server.use((req, res, next) => {
-  req.db = db;
+  req.db = db; // Adicione o objeto de banco de dados ao objeto de solicitação
   next();
 });
 server.use(router);
